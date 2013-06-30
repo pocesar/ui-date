@@ -85,36 +85,50 @@ angular.module('ui.date', [])
   var directive = {
     require:'ngModel',
     link: function(scope, element, attrs, modelCtrl) {
-      var dateFormat = attrs.uiDateFormat || uiDateFormatConfig;
-      if ( dateFormat ) {
-        // Use the datepicker with the attribute value as the dateFormat string to convert to and from a string
-        modelCtrl.$formatters.push(function(value) {
-          if (angular.isString(value) ) {
+      var formatProcessed = false, lastFormat = '', dateFormat = attrs.uiDateFormat || uiDateFormatConfig;
+      
+      function initialize(value) {
+        lastFormat = dateFormat;
+        dateFormat = value;
+        formatProcessed = true;
+        if (lastFormat !== dateFormat) {
+          // $apply()/$digest() won't call the $parsers array, this is a hack to make it call it again
+          modelCtrl.$setViewValue(modelCtrl.$viewValue); 
+          // another way would to manually call each of $parsers manually, like it happens inside 
+          // modelCtrl.$viewValue but this isn't future proof
+        }
+      }
+      
+      attrs.$observe('uiDateFormat', initialize);
+
+      modelCtrl.$formatters.push(function(value) {
+        if (!formatProcessed) {
+          return null;
+        }
+        if (angular.isString(value) ) {
+          if (dateFormat) {
             return jQuery.datepicker.parseDate(dateFormat, value);
-          }
-          return null;
-        });
-        modelCtrl.$parsers.push(function(value){
-          if (value) {
-            return jQuery.datepicker.formatDate(dateFormat, value);
-          }
-          return null;
-        });
-      } else {
-        // Default to ISO formatting
-        modelCtrl.$formatters.push(function(value) {
-          if (angular.isString(value) ) {
+          } else {
             return new Date(value);
           }
+        }
+        return null;
+      });
+      
+      modelCtrl.$parsers.push(function(value) {
+        if (!formatProcessed) {
           return null;
-        });
-        modelCtrl.$parsers.push(function(value){
-          if (value) {
+        }
+        if (value) {
+          if (dateFormat) {
+            return jQuery.datepicker.formatDate(dateFormat, value);
+          } else {
             return value.toISOString();
           }
-          return null;
-        });
-      }
+        }
+        return null;
+      });
+      
     }
   };
   return directive;

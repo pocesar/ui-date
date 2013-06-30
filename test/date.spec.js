@@ -361,6 +361,43 @@ describe('uiDateFormat', function() {
         expect(element.controller('ngModel').$viewValue).toEqual(aDate);
       });
     });
+    
+    it('should accept a scope variable as format', function() {
+      inject(function($compile, $rootScope) {
+        var aDate = new Date(2012,9,11);
+        var aDateString = "Thursday, 11 October, 2012";
+        var element = $compile('<input ui-date-format="{{format}}" ng-model="x"/>')($rootScope);
+        $rootScope.format = 'DD, d MM, yy';
+        $rootScope.$digest();
+
+        element.controller('ngModel').$setViewValue(aDate);
+        // Check that the model is updated correctly
+        expect($rootScope.x).toEqual(aDateString);
+        // Check that the $viewValue has not been altered
+        expect(element.controller('ngModel').$viewValue).toEqual(aDate);
+      });
+    });
+    
+    it('should change the format if the scope variable changes', function() {
+      inject(function($compile, $rootScope) {
+        var aDate = new Date(2012,9,11);
+        var element = $compile('<input ui-date-format="{{format}}" ng-model="x"/>')($rootScope);
+        $rootScope.format = 'DD, d MM, yy';
+        $rootScope.$digest();
+
+        element.controller('ngModel').$setViewValue(aDate);
+        // Check that the model is updated correctly
+        expect($rootScope.x).toEqual('Thursday, 11 October, 2012');
+        // Check that the $viewValue has not been altered
+        expect(element.controller('ngModel').$viewValue).toEqual(aDate);
+        
+        $rootScope.format = 'mm/dd/yy';
+        $rootScope.$digest();
+        
+        // Check that the model is updated correctly
+        expect($rootScope.x).toEqual('10/11/2012');
+      });
+    });
   });
 
   describe('with uiDateConfig', function() {
